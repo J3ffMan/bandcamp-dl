@@ -105,7 +105,7 @@ def main():
                                              arguments['--debug']))
 
     for album in album_list:
-        logging.debug(" Album data:\n\t{}".format(album))
+        logging.debug(f" Album data:\n\t{album}")
 
     for album in album_list:
         if arguments['--full-album'] and not album['full']:

@@ -51,8 +51,8 @@ class Bandcamp:
         album_release = page_json['album_release_date']
         if album_release is None:
             album_release = page_json['current']['release_date']
-            if album_release is None:
-                album_release = page_json['embed_info']['item_public']
+        if album_release is None:
+            album_release = page_json['embed_info']['item_public']
 
         try:
             album_title = page_json['current']['title']
@@ -103,8 +103,7 @@ class Bandcamp:
             track_soup = BeautifulSoup(track_page.text, "lxml")
         except FeatureNotFound:
             track_soup = BeautifulSoup(track_page.text, "html.parser")
-        track_lyrics = track_soup.find("div", {"class": "lyricsText"})
-        if track_lyrics:
+        if track_lyrics := track_soup.find("div", {"class": "lyricsText"}):
             logging.debug(" Lyrics retrieved..")
             return track_lyrics.text
         else:
@@ -116,10 +115,7 @@ class Bandcamp:
 
         :return: True if all urls accounted for
         """
-        for track in self.tracks:
-            if track['file'] is None:
-                return False
-        return True
+        return all(track['file'] is not None for track in self.tracks)
 
     @staticmethod
     def get_track_metadata(track: dict or None) -> dict:
@@ -169,7 +165,6 @@ class Bandcamp:
         :return: url as str
         """
         try:
-            url = self.soup.find(id='tralbumArt').find_all('a')[0]['href']
-            return url
+            return self.soup.find(id='tralbumArt').find_all('a')[0]['href']
         except None:
             pass
