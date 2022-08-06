@@ -10,7 +10,7 @@ from mutagen.id3._frames import USLT
 from mutagen.id3._frames import APIC
 from bandcamp_dl.utils.unicode_slugify import slugify
 
-if not sys.version_info[:2] == (3, 6):
+if sys.version_info[:2] != (3, 6):
     import mock
     from bandcamp_dl.utils import requests_patch
 
@@ -60,7 +60,7 @@ class BandcampDownloader:
 
         if album['full'] is not True:
             choice = input("Track list incomplete, some tracks may be private, download anyway? (yes/no): ").lower()
-            if choice == "yes" or choice == "y":
+            if choice in ["yes", "y"]:
                 print("Starting download process.")
                 self.download_album(album)
             else:
@@ -135,6 +135,7 @@ class BandcampDownloader:
         :param album: album dict
         :return: True if successful
         """
+        attempts = 0
         for track_index, track in enumerate(album['tracks']):
             track_meta = {
                 "artist": album['artist'],
@@ -157,28 +158,27 @@ class BandcampDownloader:
 
             logging.debug(f" Current file:\n\t{filepath}")
 
-            if album['art'] and not os.path.exists(dirname + "/cover.jpg"):
+            if album['art'] and not os.path.exists(f"{dirname}/cover.jpg"):
                 try:
-                    with open(dirname + "/cover.jpg", "wb") as f:
+                    with open(f"{dirname}/cover.jpg", "wb") as f:
                         r = self.session.get(album['art'], headers=self.headers)
                         f.write(r.content)
-                    self.album_art = dirname + "/cover.jpg"
+                    self.album_art = f"{dirname}/cover.jpg"
                 except Exception as e:
                     print(e)
                     print("Couldn't download album art.")
 
-            attempts = 0
             skip = False
 
             while True:
                 try:
-                    if not sys.version_info[:2] == (3, 6):
+                    if sys.version_info[:2] != (3, 6):
                         with mock.patch('http.client.parse_headers', requests_patch.parse_headers):
                             r = self.session.get(track['url'], headers=self.headers, stream=True)
                     else:
                         r = self.session.get(track['url'], headers=self.headers, stream=True)
                     file_length = int(r.headers.get('content-length', 0))
-                    total = int(file_length / 100)
+                    total = file_length // 100
                     # If file exists and is still a tmp file skip downloading and encode
                     if os.path.exists(filepath):
                         self.write_id3_tags(filepath, track_meta)
